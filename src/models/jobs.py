@@ -6,7 +6,7 @@ from sqlmodel import SQLModel, Field, func
 class Jobs(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory = func.now)
-    query: str = Field(nullable=False, max_length=50),
+    query: str = Field(nullable=False, max_length=50)
     temperature: float = Field(nullable=False)
     response: str = Field(nullable=False, default="[empty]")
     status: str = Field(nullable=False, default="pending")

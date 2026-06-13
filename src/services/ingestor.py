@@ -16,7 +16,11 @@ def ingest(doc_id, engine):
         session.refresh(doc)
     
     # fetch file, and ensure that exists in the file system
-    file_name = file_name_from_uuid(doc.stored_key)
+    dir = os.getenv("DOC_LOCATION")
+    if not dir: raise Exception("DOC_LOCATION is not configured")
+    file_name = f"{doc.stored_key}.{doc.file_type}"
+    file_name = os.path.join(dir, file_name)
+    
     file_path = Path(file_name)
     if not file_path.is_file():
         raise Exception(f"Document file '{file_path}' does not exist")
@@ -62,8 +66,3 @@ def commit_page(chunk, doc: Documents, session: Session):
         session.commit()
         session.refresh(db_chunk)
     except Exception as e: raise e
-
-def file_name_from_uuid(uuid) -> str | None:
-    dir = os.getenv("DOC_LOCATION")
-    if not dir: raise Exception("DOC_LOCATION is not configured")
-    return os.path.join(dir, f"{uuid}.pdf")

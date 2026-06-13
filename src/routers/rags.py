@@ -59,7 +59,6 @@ async def read(
 
 @router.get("/")
 async def read_all(
-    id: int,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
 ):

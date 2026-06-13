@@ -6,6 +6,25 @@ from pypdf import PdfReader
 from typing import Optional
 
 
+# ----- EXPOSED FUNCTIONS -----
+def embed_pdf(pdf_path: str):
+    reader = PdfReader(pdf_path)
+    embeddings_data = []
+
+    # loop through each page to extract text
+    for index, page in enumerate(reader.pages):
+        text = page.extract_text()
+        if not text or not text.strip(): continue # skip empty pages
+        curr_embeddings = embed(text, page_no=index+1)
+        embeddings_data += curr_embeddings
+    return embeddings_data
+
+def embed_txt(txt_path: str):
+    text = Path(txt_path).read_text(encoding="utf-8")
+    return embed(text)
+
+
+# ----- HELPERS -----
 def embed(text: str, page_no: Optional[int] = None):
     # partition page text into discrete chunks
     text_splits = split_text(text)
@@ -22,25 +41,6 @@ def embed(text: str, page_no: Optional[int] = None):
         embeddings_data.append(payload)
 
     return embeddings_data
-
-
-def embed_pdf(pdf_path: str):
-    reader = PdfReader(pdf_path)
-    embeddings_data = []
-
-    # loop through each page to extract text
-    for index, page in enumerate(reader.pages):
-        text = page.extract_text()
-        if not text or not text.strip(): continue # skip "empty" pages
-        curr_embeddings = embed(text, page_no=index+1)
-        embeddings_data += curr_embeddings
-    return embeddings_data
-
-
-def embed_txt(txt_path: str):
-    text = Path(txt_path).read_text(encoding="utf-8")
-    return embed(text)
-
 
 def split_text(text, chunk_size=1024):
     text_splitter = RecursiveCharacterTextSplitter(
