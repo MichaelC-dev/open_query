@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,
     original_file_name VARCHAR(255) NOT NULL,
     stored_key UUID UNIQUE NOT NULL, -- files are saved as `{storage_key}.pdf`
+    file_type VARCHAR(255) NOT NULL,
     file_length INTEGER NOT NULL,
     status VARCHAR(255) NOT NULL
     CHECK (status IN (
@@ -42,7 +43,7 @@ CREATE TABLE IF NOT EXISTS documents (
 -- Chunks table
 CREATE TABLE IF NOT EXISTS chunks (
     id SERIAL PRIMARY KEY,
-    page_number INTEGER NOT NULL,
+    page_number INTEGER, -- non-paged file types like .txt
     content TEXT NOT NULL, -- sample, not the entire chunk
     embedding VECTOR(768),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

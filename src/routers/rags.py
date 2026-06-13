@@ -75,7 +75,6 @@ async def read_all(
     return ret
 
 
-
 @router.patch("/{id}")
 async def update(
     id: int,
@@ -116,6 +115,7 @@ async def delete(
     session: Session = Depends(get_session)
 ):
     user = user_from_token(token, session)
+    # TODO - remove documents from disk
 
     rag = session.get(Rags, id)
     if rag is None: raise HTTPException(404, "RAG not found")
@@ -191,41 +191,20 @@ async def ingest_docs(
     session: Session = Depends(get_session)   
 ):
     user = user_from_token(token, session)
+    rag = sanitise_ingestion(id, files, user.id, session)
 
-    # ----- GUARDS -----
-    rag = session.get(Rags, id)
-    if rag is None: raise HTTPException(404, "RAG not found")
-    if rag.user_id != user.id:
-        raise HTTPException(403, "You do not own this RAG")
-    name = rag.name
-
-    if files is None: files = []
-    if len(files) == 0:
-        raise HTTPException(400, "No files were provided")
-
-    pdf_dir = os.getenv("PDF_LOCATION")
-    if not pdf_dir:
-        raise HTTPException(500, "PDF_LOCATION is not configured")
-    
-    max_files = os.getenv("MAX_FILES_UPLOAD")
-    if str(max_files).isdigit(): max_files = int(max_files)
-    else: max_files = 8 # default
-    if len(files) > max_files:
-        raise HTTPException(400, f"Upload cannot exceed {max_files} files.")
-    # ----- GUARDS -----
-
-    pdf_root = Path(pdf_dir)
-    pdf_root.mkdir(parents=True, exist_ok=True)
+    doc_dir = os.getenv("DOC_LOCATION")
+    doc_root = Path(doc_dir)
+    doc_root.mkdir(parents=True, exist_ok=True)
 
     created_documents = []
     for file in files:
-        if file.filename is None:
-            raise HTTPException(400, "Uploaded file is missing a filename")
+        file_type = get_permitted_file_type(file)
 
         # commit file to disk
         file_bytes = await file.read()
         storage_key = uuid4()
-        stored_path = pdf_root / f"{storage_key}.pdf"
+        stored_path = doc_root / f"{storage_key}.{file_type}"
         stored_path.write_bytes(file_bytes)
 
         # commit file to DB
@@ -233,6 +212,7 @@ async def ingest_docs(
             original_file_name=Path(file.filename).name,
             stored_key=storage_key,
             file_length=len(file_bytes),
+            file_type=file_type,
             status="pending",
             user_id=user.id,
             rag_id=rag.id,
@@ -243,8 +223,10 @@ async def ingest_docs(
             session.refresh(document)
         except Exception as e:
             if stored_path.exists():
+                # if the file could not be comitted to the documents table,
+                # then it shouldn't dangle on disk.
                 stored_path.unlink()
-            raise HTTPException(400, str(e))
+            raise HTTPException(500, str(e))
 
         # enqueue job
         enqueue_document(document.id)
@@ -257,6 +239,48 @@ async def ingest_docs(
 
     return {
         "rag_id": rag.id,
-        "rag_name": name,
+        "rag_name": rag.name,
         "queued_documents": created_documents,
     }
+
+
+# ------ HELPERS -----
+def sanitise_ingestion(id, files, user_id, session):
+    '''
+    ensure that the input space is valid,
+    and return the RAG correlating to `id`
+    '''
+    rag = session.get(Rags, id)
+    if rag is None: raise HTTPException(404, "RAG not found")
+    if rag.user_id != user_id:
+        raise HTTPException(403, "You do not own this RAG")
+
+    if files is None: files = []
+    if len(files) == 0:
+        raise HTTPException(400, "No files were provided")
+
+    doc_dir = os.getenv("DOC_LOCATION")
+    if not doc_dir:
+        raise HTTPException(500, "DOC_LOCATION is not configured")
+    
+    max_files = os.getenv("MAX_FILES_UPLOAD")
+    if str(max_files).isdigit(): max_files = int(max_files)
+    else: max_files = 8 # default
+    if len(files) > max_files:
+        raise HTTPException(400, f"Upload cannot exceed {max_files} files.")
+    
+    for file in files:
+        file_type = get_permitted_file_type(file)
+        if file_type is None:
+            msg = f"file '{file.filename}' is not permitted."
+            raise HTTPException(403, msg)
+        
+    return rag
+
+
+def get_permitted_file_type(file: UploadFile) -> str | None:
+    allowed_types = {
+        "application/pdf": "pdf",
+        "text/plain": "txt"
+    }
+    return allowed_types.get(file.content_type)
