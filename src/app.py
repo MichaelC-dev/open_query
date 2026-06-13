@@ -2,6 +2,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+
 # ----- INIT DB -----
 from sqlmodel import Session
 from src.db import construct_engine
@@ -21,14 +22,14 @@ from src.worker.dispatch import Worker, set_worker
 worker = Worker(engine)
 set_worker(worker)
 
-
 @app.on_event("startup")
 def startup():
-    ingestion_worker = Thread(
+    api_worker = Thread(
         target=worker.work,
         daemon=True
     )
-    ingestion_worker.start()
+    api_worker.start()
+
 
 # ----- ATTACH ROUTERS -----
 from src.routers.users import router as user_router

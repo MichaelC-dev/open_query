@@ -39,6 +39,7 @@ def get_job(
     # aggregate and return job data.
     response = {
         "query": selected_job.query,
+        "temperature": selected_job.temperature,
         "status": selected_job.status,
         "response": selected_job.response,
         "RAG ID": selected_job.rag_id,

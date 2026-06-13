@@ -32,7 +32,7 @@ def query(job_id, engine, top_k: int = DEFAULT_TOP_K):
         raise e
 
 
-def query_private(job, engine, top_k):
+def query_private(job: Jobs, engine, top_k):
     # update status
     with Session(engine) as session:
         job.status = "processing"
@@ -76,7 +76,8 @@ def query_private(job, engine, top_k):
         messages = [{
             "role": "system",
             "content": prompt
-        }]
+        }],
+        options={"temperature": job.temperature}
     )
 
     # add citations to DB

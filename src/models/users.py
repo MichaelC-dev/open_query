@@ -25,4 +25,4 @@ class UserUpdate(SQLModel):
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
     # changes can only be confirmed if `old_password` is valid
-    old_password: Optional[str] = None
+    old_password: str

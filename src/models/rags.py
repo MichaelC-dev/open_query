@@ -16,16 +16,16 @@ class Rags(SQLModel, table=True):
 class RagCreate(SQLModel):
     name: str
     # desc: Optional[str] = None
-    public: Optional[str] = None
+    public: Optional[bool] = None
 
 class RagQuery(SQLModel):
     message: str
-    temperature: float | None
+    temperature: Optional[float] = None
 
 class RagUpdate(SQLModel):
     name: Optional[str] = None
     # desc: Optional[str] = None
-    public: Optional[str] = None
+    public: Optional[bool] = None
 
 
 # ----- HELPERS -----
