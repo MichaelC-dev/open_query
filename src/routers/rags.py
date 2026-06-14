@@ -54,7 +54,7 @@ async def read(
     if not rag.public and rag.user_id != user.id:
         raise HTTPException(403, "Access denied")
 
-    return to_json(rag)
+    return to_json(rag, session)
 
 
 @router.get("/")
@@ -70,7 +70,7 @@ async def read_all(
     ).all()
 
     ret = []
-    for rag in rags: ret.append(to_json(rag))
+    for rag in rags: ret.append(to_json(rag, session))
     return ret
 
 

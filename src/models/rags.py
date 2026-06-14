@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field, func
+from sqlmodel import SQLModel, Field, func, Session, select
+from src.models.documents import Documents
 
 # ----- RAGS TABLE DEFINITION -----
 class Rags(SQLModel, table=True):
@@ -29,11 +30,29 @@ class RagUpdate(SQLModel):
 
 
 # ----- HELPERS -----
-def to_json(rag: Rags) -> dict[str, str]:
-    return {
+def to_json(rag: Rags, session: Session) -> dict[str, str]:
+    obj = {
         "id": rag.id,
         "name": rag.name,
         "public": rag.public,
         "user_id": rag.user_id,
-        "created": rag.date_created
+        "created": rag.date_created,
     }
+    documents = []
+    
+    # fetch docs
+    db_docs = session.exec(
+        select(Documents).where(Documents.rag_id == rag.id)
+    ).all()
+    for db_doc in db_docs:
+        curr_doc = {
+            "doc_id": db_doc.id,
+            "original_name": db_doc.original_file_name,
+            "size": db_doc.file_length,
+            "file_type": db_doc.file_type,
+            "status": db_doc.status
+        }
+        documents.append(curr_doc)
+    
+    obj["documents"] = documents
+    return obj
