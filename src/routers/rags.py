@@ -4,7 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlmodel import Session, select
 from typing import List
-from src.app import get_session
+from src.db import get_session
 from src.models.documents import Documents
 from src.models.rags import Rags, RagCreate, RagUpdate, RagQuery, to_json
 from src.models.jobs import Jobs
@@ -174,7 +174,7 @@ async def query_rag(
     # enqueue query job, and return
     enqueue_query(new_job.id)
     return {
-        "id": new_job.id,
+        "job_id": new_job.id,
         "query": new_job.query,
         "temperature": new_job.temperature,
         "status": new_job.status

@@ -1,10 +1,11 @@
-import ollama
+from ollama import Client
 import os
 from sqlmodel import Session, select
 from src.models.documents import Documents, Chunks
 from src.models.jobs import Jobs, Citations
 from src.models.rags import Rags
 
+# ----- VARS -----
 UNFORMATTED_PROMPT = """
 You are a helpful chat assistant, who specialises in {subject}. A user has asked
 you to answer the following question:
@@ -13,6 +14,12 @@ you to answer the following question:
 
 Using the following sources, answer the question:
 """
+
+# ----- VARS -----
+ollama_url = os.getenv("OLLAMA_URL")
+if ollama_url is None:
+    ollama_url = 'http://ollama:11434' #fallback 
+client = Client(host=ollama_url)
 
 
 DEFAULT_TOP_K = 10
@@ -41,7 +48,7 @@ def query_private(job: Jobs, engine, top_k):
         session.refresh(job)
 
     embed_model_name = os.getenv("EMBED_MODEL")
-    embedding = ollama.embed(model=embed_model_name, input=job.query)
+    embedding = client.embed(model=embed_model_name, input=job.query)
     vector = embedding["embeddings"][0]
 
     # collect the closest chunks for this RAG directly in SQL using cosine distance
@@ -71,7 +78,7 @@ def query_private(job: Jobs, engine, top_k):
     prompt = build_prompt(job.query, references, rag_name)
 
     # fire prompt
-    response = ollama.chat(
+    response = client.chat(
         model = os.getenv("LLM_MODEL"),
         messages = [{
             "role": "system",

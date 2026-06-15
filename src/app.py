@@ -8,9 +8,6 @@ from sqlmodel import Session
 from src.db import construct_engine
 
 engine = construct_engine()
-def get_session():
-    with Session(engine) as session:
-        yield session
 
 
 # ----- INIT API -----

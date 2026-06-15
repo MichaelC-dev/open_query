@@ -6,7 +6,7 @@ from src.password import hash_password, verify_password
 from src.password import create_jwt, oauth2_scheme
 from src.utils.jwt import user_from_token
 from src.utils.users import update_username
-from src.app import get_session
+from src.db import get_session
 
 router = APIRouter(prefix="/user")
 

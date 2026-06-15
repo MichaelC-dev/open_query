@@ -2,7 +2,7 @@ import src.utils as utils
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from src.password import oauth2_scheme
-from src.app import get_session
+from src.db import get_session
 from src.models.jobs import Jobs, Citations
 from src.models.documents import Documents, Chunks
 from src.utils.jwt import user_from_token

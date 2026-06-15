@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 import os
+from sqlmodel import Session
+
 
 
 def construct_engine():
@@ -16,3 +18,10 @@ def construct_engine():
     engine = create_engine(db_url)
 
     return engine
+
+
+def get_session():
+    """Dependency generator for FastAPI to provide DB sessions."""
+    engine = construct_engine()
+    with Session(engine) as session:
+        yield session

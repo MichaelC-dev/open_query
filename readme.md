@@ -5,38 +5,40 @@
 ## Prerequisites
 
 - Docker and Docker Compose
-- Python 3.13
-- A local Ollama setup for embedding and chat models
-  - `nomic-embed-text` was used in system testing for embedding
-  - `qwen2.5:1.5b` was used as the system chat model.
+
 
 ## Setup
 
-1. Start PostgreSQL with pgvector:
+1. Create the environment file:
 
 	```bash
-	docker compose up
+	cp .env-example .env
 	```
 
-2. Install the Python dependencies:
+	Update values as needed (Postgres credentials, DOC_LOCATION, etc.).
+
+
+2. Start the full stack (API + PostgreSQL + pgvector + Ollama):
 
 	```bash
-	py -m pip install -r requirements.txt
+	docker compose up --build
 	```
+
+	This will:
+	- Start the FastAPI app on http://localhost:8000
+	- Start PostgreSQL with pgvector enabled
+	- Start the Ollama service for embeddings and chat models
+	- Initialise the database schema from init/
 
 3. Pull the required ollama models:
 
 	```bash
-	ollama pull nomic-embed-text
-	ollama pull qwen2.5:1.5b
+	docker compose exec ollama ollama pull nomic-embed-text
+	docker compose exec ollama ollama pull qwen2.5:1.5b
 	```
 
+4. Verify that the API is running, by contacting `GET http://localhost:8000/`.
 
-4. Run the API locally:
-
-	```bash
-	uvicorn --port=8000 src.app:app --reload
-	```
 
 ## Important Endpoints
 
@@ -88,5 +90,5 @@ While `open_query` is operational, it is an actively evolving project. Future im
 
 - a `.env` file is used for managing system variables. a `.env-example` file has been provided as a template for the required `.env` file.
 - Database configuration comes from `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`.
-- File uploads expect `PDF_LOCATION` to point to a writable directory.
+- File uploads expect `DOC_LOCATION` to point to a writable directory.
 - Query and ingestion behavior depends on the embedding model and chat model configured through the Ollama-related environment variables.

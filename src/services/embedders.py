@@ -1,9 +1,15 @@
 import os
 from pathlib import Path
-import ollama
+from ollama import Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 from typing import Optional
+
+# ----- VARS -----
+ollama_url = os.getenv("OLLAMA_URL")
+if ollama_url is None:
+    ollama_url = 'http://ollama:11434' #fallback 
+client = Client(host=ollama_url)
 
 
 # ----- EXPOSED FUNCTIONS -----
@@ -33,7 +39,7 @@ def embed(text: str, page_no: Optional[int] = None):
     embeddings_data = []
     embed_model_name = os.getenv("EMBED_MODEL")
     for text in text_splits:
-        response = ollama.embed(model=embed_model_name, input=text)
+        response = client.embed(model=embed_model_name, input=text)
         vector = response["embeddings"][0]
         payload = {"text": text, "embedding": vector}
         if page_no is not None:
