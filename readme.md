@@ -40,6 +40,25 @@
 4. Verify that the API is running, by contacting `GET http://localhost:8000/`.
 
 
+### Rate Limiting
+`open_query` uses slowapi for request rate limiting. If the API is deployed behind a reverse proxy (such as Nginx), the proxy must be configured to forward the original client IP address. Otherwise all requests may appear to originate from the proxy itself, causing rate limits to be applied incorrectly across multiple users.
+
+For Nginx, ensure the X-Forwarded-For header is forwarded:
+
+```nginx
+location / {
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_pass http://open_query;
+}
+```
+
+FastAPI and Uvicorn should be configured accordingly, to trust forwarded headers only from trusted proxies. Review your deployment configuration carefully before exposing the service.
+
+
 ## Important Endpoints
 
 The API is organized around users, RAG collections, and background jobs.
@@ -84,11 +103,11 @@ Data flow is straightforward: a user uploads a PDF into a RAG collection, the wo
 
 ## Project Status
 
-While `open_query` is operational, it is an actively evolving project. Future improvements may include migrating the current in-memory job processing system to a more robust solution (such as Celery). Further architectural refinements are also being reviewed to improve scalability, maintainability, and overall system performance. Finally additional security measures (such as more exhaustive authentication controls, rate limiting, and deployment best practices) should be implemented before production use.
+While `open_query` is operational, it is an actively evolving project. Future improvements may include migrating the current in-memory job processing system to a more robust platform (such as Celery). Additional security measures (such as more exhaustive authentication controls and deployment best practices) should be implemented before production use.
 
 ## Notes
 
-- a `.env` file is used for managing system variables. a `.env-example` file has been provided as a template for the required `.env` file.
+- a `.env` file is used for managing system variables. An `.env-example` file has been provided as a template for the required `.env` file.
 - Database configuration comes from `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`.
 - File uploads expect `DOC_LOCATION` to point to a writable directory.
 - Query and ingestion behavior depends on the embedding model and chat model configured through the Ollama-related environment variables.
