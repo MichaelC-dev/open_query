@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Request
 from sqlmodel import Session, select
 from typing import List
 from src.db import get_session
+from src.limits import limiter
 from src.models.documents import Documents
 from src.models.rags import Rags, RagCreate, RagUpdate, RagQuery, to_json
 from src.models.jobs import Jobs
@@ -16,7 +17,9 @@ router = APIRouter(prefix="/rags")
 
 
 @router.post("/")
+@limiter.limit("5/hour")
 async def create(
+    request: Request,
     details: RagCreate,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
@@ -42,8 +45,10 @@ async def create(
 
 
 @router.get("/{id}")
+@limiter.limit("10/minute")
 async def read(
     id: int,
+    request: Request,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
 ):
@@ -58,7 +63,9 @@ async def read(
 
 
 @router.get("/")
+@limiter.limit("2/minute")
 async def read_all(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
 ):
@@ -75,7 +82,9 @@ async def read_all(
 
 
 @router.patch("/{id}")
+@limiter.limit("10/hour")
 async def update(
+    request: Request,
     id: int,
     details: RagUpdate,
     token: str = Depends(oauth2_scheme),
@@ -108,7 +117,9 @@ async def update(
 
 
 @router.delete("/{id}")
+@limiter.limit("10/hour")
 async def delete(
+    request: Request,
     id: int,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
@@ -132,7 +143,9 @@ async def delete(
 
 # QUERY
 @router.post("/query/{id}")
+@limiter.limit("5/hour")
 async def query_rag(
+    request: Request,
     id: int, 
     query: RagQuery,
     token: str = Depends(oauth2_scheme),
@@ -183,7 +196,9 @@ async def query_rag(
 
 # INGEST DOCUMENTS
 @router.post("/ingest/{id}")
+@limiter.limit("5/hour")
 async def ingest_docs(
+    request: Request,
     id: int,
     files: List[UploadFile] | None,
     token: str = Depends(oauth2_scheme),
@@ -222,8 +237,8 @@ async def ingest_docs(
             session.refresh(document)
         except Exception as e:
             if stored_path.exists():
-                # if the file could not be comitted to the documents table,
-                # then it shouldn't dangle on disk.
+                # if the file could not be comitted to the documents,
+                # table then it shouldn't persist on disk.
                 stored_path.unlink()
             raise HTTPException(500, str(e))
 

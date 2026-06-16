@@ -1,17 +1,20 @@
 import src.utils as utils
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from src.password import oauth2_scheme
 from src.db import get_session
 from src.models.jobs import Jobs, Citations
 from src.models.documents import Documents, Chunks
 from src.utils.jwt import user_from_token
+from src.limits import limiter
 
 router = APIRouter(prefix="/jobs")
 
 
 @router.get("/{id}")
+@limiter.limit("20/minute")
 def get_job(
+    request: Request,
     id: int,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session),

@@ -14,6 +14,18 @@ engine = construct_engine()
 from fastapi import FastAPI
 from threading import Thread
 app = FastAPI()
+
+# attach rate limiting
+from src.limits import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# attach async worker
 from src.worker.dispatch import Worker, set_worker
 
 worker = Worker(engine)

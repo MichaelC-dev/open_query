@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
 from src.models.users import Users, UserCreate, UserLogin, UserUpdate
@@ -7,12 +7,15 @@ from src.password import create_jwt, oauth2_scheme
 from src.utils.jwt import user_from_token
 from src.utils.users import update_username
 from src.db import get_session
+from src.limits import limiter
 
 router = APIRouter(prefix="/user")
 
 
 @router.post("/")
+@limiter.limit("5/hour")
 async def create(
+    request: Request,
     credentials: UserCreate,
     session: Session = Depends(get_session)
 ):
@@ -21,6 +24,10 @@ async def create(
         select(Users).where(Users.username == credentials.username)
     ).first()
     if user_exists: raise HTTPException(400, f"username taken.")
+
+    # ensure that password is consistent
+    if credentials.password != credentials.confirm_password:
+        raise HTTPException(400, "Passwords did not match.")
     
     new_user = Users(
         username = credentials.username,
@@ -35,7 +42,9 @@ async def create(
 
 
 @router.get("/")
+@limiter.limit("10/minute")
 async def read(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
 ):
@@ -50,7 +59,9 @@ async def read(
 
 
 @router.patch("/")
+@limiter.limit("5/hour")
 async def update(
+    request: Request,
     details: UserUpdate,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
@@ -90,7 +101,9 @@ async def update(
 
 
 @router.delete("/")
+@limiter.limit("1/hour")
 async def delete(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session)
 ):
@@ -104,7 +117,12 @@ async def delete(
 
 
 @router.post("/login")
-async def login(credentials: UserLogin, session: Session = Depends(get_session)):
+@limiter.limit("20/hour")
+async def login(
+    request: Request,
+    credentials: UserLogin,
+    session: Session = Depends(get_session)
+):
     try: 
         selected_user = session.exec(
             select(Users)
