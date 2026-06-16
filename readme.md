@@ -5,6 +5,7 @@
 ## Prerequisites
 
 - Docker and Docker Compose
+- python3.13, with the `requests` library installed (Optional)
 
 
 ## Setup
@@ -39,6 +40,7 @@
 
 4. Verify that the API is running, by contacting `GET http://localhost:8000/`.
 
+5. (Optional) test the API's functionality by running `python3 ./demo.py`.
 
 ### Rate Limiting
 `open_query` uses slowapi for request rate limiting. If the API is deployed behind a reverse proxy (such as Nginx), the proxy must be configured to forward the original client IP address. Otherwise all requests may appear to originate from the proxy itself, causing rate limits to be applied incorrectly across multiple users.

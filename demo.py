@@ -4,8 +4,9 @@ import time
 from pathlib import Path
 import requests
 
+# adjust as needed
 HOST_URL = "http://localhost:8000"
-EXAMPLES_FOLDER_ROOT = Path("examples") # adjust as needed
+EXAMPLES_FOLDER_ROOT = Path("examples")
 
 rag_a_query_1 = "Why did the dreamer in White Nights not like the yellow house?"
 rag_a_query_2 = "Who was Matrona in White Nights?"
