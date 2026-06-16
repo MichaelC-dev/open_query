@@ -42,8 +42,7 @@ def embed(text: str, page_no: Optional[int] = None):
         response = client.embed(model=embed_model_name, input=text)
         vector = response["embeddings"][0]
         payload = {"text": text, "embedding": vector}
-        if page_no is not None:
-            payload["page"] = page_no
+        payload["page"] = page_no # can be null
         embeddings_data.append(payload)
 
     return embeddings_data
